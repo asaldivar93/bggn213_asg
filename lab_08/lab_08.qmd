@@ -1,0 +1,166 @@
+---
+title: "lab_08"
+author: "Alexis Saldivar (PID: A69038083)"
+format: pdf
+toc: True
+---
+
+## Background
+something
+
+## Libraries
+```{r}
+library(ggplot2)
+```
+
+## Data import
+Remove patient id and diagnosis from the dataset.
+```{r}
+cancer_raw_df <- read.csv("WisconsinCancer.csv", row.names=1)
+new_samples <- read.csv("new_samples.csv")
+```
+
+### Data Cleaning
+Remove diagnosis column from the dataset
+```{r}
+diagnosis <- as.factor(cancer_raw_df$diagnosis)
+cancer_df <- cancer_raw_df[,-1]
+```
+
+### Data summary
+```{r}
+obsvs <- nrow(cancer_df)
+vars <- ncol(cancer_df)
+vars_w_mean <- length(grep("_mean$", names(cancer_df), value=TRUE))
+n_malignant <- sum(diagnosis=="M")
+sprintf("Q1. There are %s obsvervations in the dataset", obsvs)
+sprintf("Q2. There are %s malignant diagnosis", n_malignant)
+sprintf("Q3. There are %s vars with suffix _mean", vars_w_mean)
+```
+
+## PCA
+```{r}
+round(colMeans(cancer_df), 4)
+apply(cancer_df, 2, sd)
+```
+
+```{r}
+cancer_pca <- prcomp(cancer_df, scale=TRUE)
+cancer_pca_summary <- summary(cancer_pca)
+pc1_var <- cancer_pca_summary$importance[2, 1]
+sprintf("Q4. PC1 explains %s of the variance", pc1_var)
+# Get the PCs that explain 70% of the variance
+sum_var <- 0
+pc_n <- 0 
+while(sum_var<=0.7) {
+  pc_n <- pc_n + 1
+  sum_var <- sum_var + cancer_pca_summary$importance[2, pc_n]
+}
+sprintf("Q5. The first %s PCs explain %s of the variance", pc_n, sum_var)
+# Get the PCs that explain 90% of the variance
+sum_var <- 0
+pc_n <- 0 
+while(sum_var<=0.9) {
+  pc_n <- pc_n + 1
+  sum_var <- sum_var + cancer_pca_summary$importance[2, pc_n]
+}
+sprintf("Q6. The first %s PCs explain %s of the variance", pc_n, sum_var)
+```
+
+> Q7.
+
+```{r}
+biplot(cancer_pca)
+```
+
+> Q8.
+
+```{r}
+ggplot(cancer_pca$x) +
+  aes(PC1, PC3, col=diagnosis) +
+  geom_point()
+```
+
+```{r}
+ggplot(cancer_pca$x) +
+  aes(PC1, PC2, col=diagnosis) +
+  geom_point()
+```
+
+```{r}
+lo <- cancer_pca$rotation["concave.points_mean", 1]
+sprintf("Q9. The contribution of concave.points_mean to PC1 is %s", round(lo,2))
+```
+## Hierarchical Clustering
+> Q10. what is the height at which the clustering model has 4 clusters?
+
+19
+
+```{r}
+cancer_df_scaled <- scale(cancer_df)
+cancer_dist <- dist(cancer_df_scaled, method="euclidian")
+cancer_hclust <- hclust(cancer_dist, method="complete")
+plot(cancer_hclust)
+abline(19, 0, col="red", lty=2)
+cancer_hclust_cut <- cutree(cancer_hclust, 2)
+table(cancer_hclust_cut, diagnosis)
+```
+
+```{r}
+cancer_dist <- dist(cancer_df_scaled, method="euclidian")
+cancer_hclust <- hclust(cancer_dist, method="ward.D2")
+cancer_hclust_cut <- cutree(cancer_hclust, 2)
+table(cancer_hclust_cut, diagnosis)
+```
+> Q12. Which method gives your favorite results for the same data.dist dataset? Explain your reasoning.
+
+Ward.D2, because it split the largest number of B and M diagnosis into different clusters.
+
+## Clustering PCA
+
+```{r}
+pca_dist <- dist(cancer_pca$x[,1:7], method="euclidian")
+pca_hclust <- hclust(pca_dist, method="ward.D2")
+plot(pca_hclust)
+```
+
+> Q13. How well does the newly created model with four clusters separate out the two diagnoses?
+
+This model has a higher True positive value
+
+```{r}
+pca_hclust_cut <- cutree(pca_hclust, 2)
+table(pca_hclust_cut, diagnosis)
+sensitivity <- round(188 / (188 + 28), 2)
+specificity <- round(324 / (324 + 24), 2)
+sprintf("sensitivity: %s, specificity: %s", sensitivity, specificity)
+```
+> Q14.  How well do the hierarchical clustering models you created in previous sections (i.e. before PCA) do in terms of separating the diagnoses? 
+
+This model has less True positive but also less false positives
+
+```{r}
+cancer_dist <- dist(cancer_df_scaled, method="euclidian")
+cancer_hclust <- hclust(cancer_dist, method="ward.D2")
+cancer_hclust_cut <- cutree(cancer_hclust, 2)
+table(cancer_hclust_cut, diagnosis)
+sensitivity <- round(164 / (164 + 20), 2)
+specificity <- round(337 / (337 + 48), 2)
+sprintf("sensitivity: %s, specificity: %s", sensitivity, specificity)
+```
+## Prediction
+
+```{r}
+url <- "https://tinyurl.com/new-samples-CSV"
+new <- read.csv(url)
+npc <- predict(cancer_pca, newdata=new)
+```
+```{r}
+plot(cancer_pca$x[,1:2], col=diagnosis)
+points(npc[,1], npc[,2], col="blue", pch=16, cex=3)
+text(npc[,1], npc[,2], c(1,2), col="white")
+```
+
+> Q16. Which of these new patients should we prioritize for follow up based on your results?
+
+Patient 2 should be prioritized.
