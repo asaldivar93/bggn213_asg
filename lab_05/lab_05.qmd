@@ -1,0 +1,89 @@
+---
+title: "lab_05"
+author: "Alexis Saldivar (PID: A69038083)"
+format: pdf
+---
+```{r}
+# install.packages("ggplot2")
+library(ggplot2)
+library(colorspace)
+library(ggrepel)
+library(patchwork)
+```
+
+## Base R
+```{r}
+head(mtcars, 5)
+```
+```{r}
+ggplot(mtcars) +
+  aes(mpg, disp) +
+  geom_point()
+```
+
+## ggplot
+```{r}
+ggplot(cars) +
+  aes(x=speed, y=dist) +
+  geom_point() +
+  geom_smooth(method="lm", se=FALSE) +
+  theme_bw() +
+  labs(
+    title="Pretty Plot",
+    x="Speed (mph)",
+    y="Distance (ft)",
+    caption="is it really?",
+  )
+```
+
+## Plot gene expression data
+```{r}
+url <- "https://bioboot.github.io/bimm143_S20/class-material/up_down_expression.txt"
+genes <- read.delim(url)
+head(genes, 5)
+
+ncol(genes)
+colnames(genes)
+table(genes$State)
+```
+> Q1. How many genes are in this wee datase?
+
+There are `r nrow(genes)` genes in the dataset.
+
+>Q2. How many "up" regulated genes are there?
+
+```{r}
+# summary of Categorical column
+state_df <- table(genes$State)
+state_df
+```
+
+```{r}
+palette <- diverge_hcl(3, palette="Tropic")
+ggplot(genes) +
+  aes(
+    Condition1,
+    Condition2,
+    color=State,
+  ) +
+  geom_point() +
+  scale_color_manual(values=palette)
+  
+```
+
+
+```{r}
+url <- "https://raw.githubusercontent.com/jennybc/gapminder/master/inst/extdata/gapminder.tsv"
+
+gapminder <- read.delim(url)
+head(gapminder)
+```
+
+```{r}
+ggplot(gapminder) +
+  aes(gdpPercap, lifeExp, color=continent, size=pop) +
+  geom_point(alpha=0.2) +
+  facet_wrap(~continent)
+```
+
+

@@ -1,0 +1,93 @@
+---
+title: "lab_07"
+author: "Alexis Saldivar (PID: A69038083)"
+format: pdf
+---
+
+```{r}
+library(tidyr)
+library(ggplot2)
+url <- "https://tinyurl.com/UK-foods"
+food_df <- read.csv(url, row.names=1)
+dim(food_df)
+```
+> Q1. How many rows and columns are in your new data frame named x? What R functions could you use to answer this questions?
+
+There are 17 rows and 4 columns
+ 
+> Q2. Which approach to solving the ‘row-names problem’ mentioned above do you prefer and why? Is one approach more robust than another under certain circumstances?
+
+I'd rather use row.names=1 since it avoids extra manipulation of the dataset
+
+```{r}
+barplot(as.matrix(food_df), beside=F, col=rainbow(nrow(food_df)))
+```
+> Q3. Changing what optional argument in the above barplot() function results in the following plot?
+
+beside=T
+
+```{r}
+x_long <- food_df |> 
+          tibble::rownames_to_column("Food") |> 
+          pivot_longer(cols = -Food, 
+                       names_to = "Country", 
+                       values_to = "Consumption")
+head(x_long)
+```
+```{r}
+ggplot(x_long) +
+  aes(x = Country, y = Consumption, fill = Food) +
+  geom_col(position = "stack") +
+  theme_bw()
+```
+> Q4. Changing what optional argument in the above ggplot() code results in a stacked barplot figure?
+
+geom_col(position = "stack")
+
+
+> Q7. Complete the code below to generate a plot of PC1 vs PC2. The second line adds text labels over the data points.
+
+```{r}
+pca <- prcomp(t(food_df))
+# Create a data frame for plotting
+df <- as.data.frame(pca$x)
+df$Country <- rownames(df)
+
+ggplot(pca$x) +
+  aes(x = PC1, y = PC2, label = rownames(pca$x)) +
+  geom_point(size = 3) +
+  geom_text(vjust = -0.5) +
+  xlim(-270, 500) +
+  xlab("PC1") +
+  ylab("PC2") +
+  theme_bw()
+```
+> Q9: Generate a similar ‘loadings plot’ for PC2. What two food groups feature prominantely and what does PC2 maninly tell us about?
+
+```{r}
+ggplot(pca$rotation) +
+  aes(x = PC2, 
+      y = reorder(rownames(pca$rotation), PC2)) +
+  geom_col(fill = "steelblue") +
+  xlab("PC2 Loading Score") +
+  ylab("") +
+  theme_bw() +
+  theme(axis.text.y = element_text(size = 9))
+```
+
+
+
+```{r}
+url2 <- "https://tinyurl.com/expression-CSV"
+rna.data <- read.csv(url2, row.names=1)
+dim(rna.data)
+
+```
+> Q10: How many genes and samples are in this data set? How many PCs do you think it will take to have a useful overview of this data set (see below)?
+
+There are 100 genes in the dataset
+
+
+
+
+

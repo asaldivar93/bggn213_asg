@@ -1,0 +1,69 @@
+---
+title: "Lab 6"
+author: "Alexis Saldivar Garcia (PID: A69038083)"
+format: pdf
+---
+
+```{r}
+library(dplyr)
+library(tidyr)
+```
+
+```{r}
+grade <- function(grades_vec) {
+  has_na <- is.na(grades_vec) # did the student miss any homework
+  if (sum(has_na)!=0) {
+    # find which homework the student missed
+    pos_na <- which(has_na==TRUE)
+    # drop just one of those homework
+    grades_vec <- grades_vec[-pos_na[1]]
+  } else {
+    # Find the lowest grades
+    min_grade <- min(grades_vec)
+    pos_min <-  which(grades_vec==min_grade)
+    # Drop one of the lowest grades
+    grades_vec <- grades_vec[-pos_min[1]]
+  }
+  return(mean(grades_vec))
+}
+```
+
+```{r}
+grades_df <- read.csv("student_homework.csv")
+grades_df <- grades_df %>%
+  rowwise(name) %>%
+  mutate(avg_grade=grade(c_across(everything()))) %>%
+  ungroup() %>%
+  arrange(desc(avg_grade))
+
+top_student <- grades_df[1,1]
+sprintf("Q2. The top scoring student is %s", top_student)
+```
+
+```{r}
+avg_of_hw <- grades_df %>%
+  summarise(across(starts_with("hw"), ~mean(replace_na(., 0))))
+
+min_grade <- min(avg_of_hw)
+lowest_hw <- which(min_grade==avg_of_hw)
+sprintf("Q3. The hardest homework was hw%s", lowest_hw)
+```
+
+```{r}
+grades_df_fillna <- grades_df %>% 
+  mutate(across(everything(), ~replace_na(., 0)))
+corr_df <- grades_df_fillna %>%
+  summarise(
+    across(
+      starts_with("hw"),
+      ~cor(grades_df_fillna$avg_grade, .)
+      )
+    )
+max_cor <- max(corr_df)
+max_cor_hw <- which(corr_df==max_cor)
+sprintf("Q4. The most predictive homework to avg.score was hw%s", max_cor_hw)
+```
+
+
+
+
